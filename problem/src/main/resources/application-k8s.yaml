@@ -3,3 +3,10 @@ server:
 eureka:
   client:
     enabled: false
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          user-service:
+            url: http://user-manage.backend.svc.cluster.local:8080
