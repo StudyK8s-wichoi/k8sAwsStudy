@@ -1,0 +1,70 @@
+namespace: backend
+
+externalDb:
+  hostIp: ""  # start.sh 가 --set externalDb.hostIp=$HOST_IP 로 주입
+
+gateway:
+  replicaCount: 1
+  image:
+    repository: gateway
+    tag: latest
+    pullPolicy: Never
+
+userManage:
+  replicaCount: 1
+  image:
+    repository: user_manage
+    tag: latest
+    pullPolicy: Never
+
+chapter:
+  replicaCount: 1
+  image:
+    repository: chapter
+    tag: latest
+    pullPolicy: Never
+
+problem:
+  replicaCount: 1
+  image:
+    repository: problem
+    tag: latest
+    pullPolicy: Never
+
+flyway:
+  image:
+    repository: flyway
+    tag: latest
+    pullPolicy: Never
+
+secret:
+  db:
+    host: mysql
+    port: "3306"
+    name: TEST
+    user: test
+    password: test
+  redis:
+    host: redis
+    port: "6379"
+    password: study1234
+  jwt:
+    secret: your-jwt-secret
+
+ingress:
+  className: nginx
+  path: /
+
+ingress-nginx:
+  controller:
+    hostPort:
+      enabled: true
+    nodeSelector:
+      ingress-ready: "true"
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Equal
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Equal
+        effect: NoSchedule

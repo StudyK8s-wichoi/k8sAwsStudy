@@ -37,6 +37,6 @@ out/
 .vscode/
 
 /**/log/**
-/.omc/**
-/.playwright-mcp/**
-/docker/logs/**
+**/.omc/**
+**/.playwright-mcp/**
+**/docker/logs/**
