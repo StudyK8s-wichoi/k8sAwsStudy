@@ -1,0 +1,44 @@
+# =====================================================================
+# mysql / redis Service (external-db.yaml) 의 실제 백엔드 IP 정의.
+#
+# __HOST_IP__ 플레이스홀더는 start.sh 가 kind 도커 네트워크 게이트웨이
+# (= 호스트 맥북의 IP, 예: 172.18.0.1) 로 sed 치환 후 kubectl 에 apply.
+#
+# Service 와의 연결은 `kubernetes.io/service-name` 라벨로 이뤄진다
+# (legacy Endpoints 는 metadata.name 일치로 연결했지만, EndpointSlice 는 라벨 기반).
+#
+# ※ 이 파일을 직접 kubectl apply 하면 안 된다 (플레이스홀더 그대로라 실패).
+# ※ EKS + RDS/ElastiCache 로 전환 시엔 이 파일 자체가 불필요 — external-db.yaml
+#   의 Service 를 ExternalName 타입으로 교체하면 EndpointSlice 는 필요 없음.
+# =====================================================================
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: mysql-1
+  namespace: backend
+  labels:
+    kubernetes.io/service-name: mysql
+addressType: IPv4
+endpoints:
+  - addresses:
+      - __HOST_IP__
+ports:
+  - name: mysql
+    port: 3306
+    protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: redis-1
+  namespace: backend
+  labels:
+    kubernetes.io/service-name: redis
+addressType: IPv4
+endpoints:
+  - addresses:
+      - __HOST_IP__
+ports:
+  - name: redis
+    port: 6379
+    protocol: TCP

@@ -148,28 +148,46 @@ k8s/
 ### Secret 구성 (`k8s/common/secret.yaml`)
 
 ```yaml
-DB_HOST: "host.docker.internal"   # Docker Compose DB 접근
+DB_HOST: "mysql"      # k8s 내부 Service 이름 (external-db.yaml 에서 정의)
 DB_PORT: "3306"
 DB_NAME: "TEST"
 DB_USER: "test"
 DB_PASSWORD: "test"
-REDIS_HOST: "host.docker.internal"
+REDIS_HOST: "redis"   # k8s 내부 Service 이름
 REDIS_PORT: "6379"
 REDIS_PASSWORD: "study1234"
 JWT_SECRET: "..."
 ```
 
-### host.docker.internal 접근 구조
+### 호스트 DB 접근 구조 (External DB Service 패턴)
 
 ```
 K8s Pod
-  → CoreDNS (host.docker.internal → 192.168.65.254)
-  → 호스트 Mac
-  → Docker Compose MySQL/Redis 컨테이너 (포트 맵핑)
+  → CoreDNS (mysql.backend.svc.cluster.local → ClusterIP)
+  → kube-proxy
+  → EndpointSlice 에 등록된 호스트 IP (kind 게이트웨이, 예: 172.18.0.1)
+  → 호스트 Mac 의 Docker Compose MySQL/Redis (포트 3306/6379 공개)
 ```
 
-K8s Pod 내부에서 CoreDNS는 `host.docker.internal`을 모름  
-→ **start.sh에서 CoreDNS ConfigMap을 패치**하여 IP 주입.
+**핵심 아이디어**: selector 없는 `Service` + 수동 `EndpointSlice` 로 클러스터 밖 DB 를
+k8s 네이티브 DNS 이름으로 감싼다.
+
+- `k8s/common/external-db.yaml` 이 `mysql` / `redis` Service 정의.
+- `k8s/common/external-db-endpoints.template.yaml` 이 EndpointSlice 템플릿
+  (IP 자리는 `__HOST_IP__` 플레이스홀더).
+- `start.sh` 가 kind 도커 네트워크 게이트웨이 IP 를 동적으로 찾아
+  `sed` 로 치환 후 kubectl 에 apply. EndpointSlice 는 `kubernetes.io/service-name`
+  라벨로 Service 와 연결된다.
+- CoreDNS ConfigMap 을 건드리지 않으므로 초기 구성이 단순.
+- 나중에 EKS + RDS/ElastiCache 로 옮길 때는 `external-db.yaml` 의
+  Service 를 `type: ExternalName` + `externalName: <RDS endpoint>` 로 교체하고
+  EndpointSlice 템플릿 파일과 sed 치환 블록만 삭제하면 됨. Secret 의
+  `DB_HOST=mysql` 은 그대로 유지.
+
+> 이전 방식(`host.docker.internal` + CoreDNS hosts 블록 패치)은 제거됨.
+> ExternalName 이 아니라 Service+EndpointSlice 를 쓰는 이유: ExternalName 은
+> CNAME 이라 타깃이 **DNS 이름** 이어야 하고 IP 는 허용되지 않는데,
+> 로컬 맥 호스트는 파드에서 해석 가능한 정식 DNS 이름이 없음.
 
 ---
 
@@ -177,13 +195,13 @@ K8s Pod 내부에서 CoreDNS는 `host.docker.internal`을 모름
 
 ```
 [1] kind 클러스터 확인/생성 (이미 있으면 스킵)
-[2] host.docker.internal IP 감지 → CoreDNS 패치
+[2] namespace + secret + external-db(Service) 적용
+    → kind 게이트웨이 IP 를 감지해 mysql/redis EndpointSlice 주입
 [3] NGINX Ingress Controller 설치 및 대기
-[4] namespace, secret 적용
-[5] Gradle bootJar 빌드
-[6] Docker 이미지 빌드 → kind 로드
-[7] Flyway Job 실행 및 완료 대기
-[8] 서비스 배포 (gateway, user, chapter, problem)
+[4] Gradle bootJar 빌드
+[5] Docker 이미지 빌드 → kind 로드
+[6] Flyway Job 실행 및 완료 대기
+[7] 서비스 배포 (gateway, user, chapter, problem)
 ```
 
 ### 사용법
