@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: problem
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "study.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.problem.replicaCount }}
+  selector:
+    matchLabels:
+      app: problem
+  template:
+    metadata:
+      labels:
+        app: problem
+    spec:
+      containers:
+        - name: problem
+          image: "{{ .Values.problem.image.repository }}:{{ .Values.problem.image.tag }}"
+          imagePullPolicy: {{ .Values.problem.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: REDIS_PASSWORD

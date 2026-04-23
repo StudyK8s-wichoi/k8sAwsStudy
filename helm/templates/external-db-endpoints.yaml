@@ -1,0 +1,35 @@
+{{- if .Values.externalDb.hostIp }}
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: mysql-1
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "study.labels" . | nindent 4 }}
+    kubernetes.io/service-name: mysql
+addressType: IPv4
+endpoints:
+  - addresses:
+      - {{ .Values.externalDb.hostIp | quote }}
+ports:
+  - name: mysql
+    port: 3306
+    protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: redis-1
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "study.labels" . | nindent 4 }}
+    kubernetes.io/service-name: redis
+addressType: IPv4
+endpoints:
+  - addresses:
+      - {{ .Values.externalDb.hostIp | quote }}
+ports:
+  - name: redis
+    port: 6379
+    protocol: TCP
+{{- end }}
