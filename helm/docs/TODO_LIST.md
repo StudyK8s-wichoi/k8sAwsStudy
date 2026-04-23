@@ -5,7 +5,7 @@
 클라우드
 1. _helpers.tpl 에 공통 라벨, 이름 규칙 정의
 2. Nginx Ingress -> Gateway API 전환 방법 확인
-공통
+공-통
 1. Docker Repository 설정
 2. Helm Repository 설정
 3. Istio, Gateway API 학습
