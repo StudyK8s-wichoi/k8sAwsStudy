@@ -3,3 +3,10 @@ server:
 eureka:
   client:
     enabled: false
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          problem-service:
+            url: http://problem.backend.svc.cluster.local:8080
